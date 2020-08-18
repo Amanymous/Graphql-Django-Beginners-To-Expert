@@ -250,9 +250,73 @@ schema = graphene.Schema(query=Query ,mutation=Mutation)
 
 ```
 
+<h1>Quering User By ID </h1>
 
+```
 
+cd users/schema.py
 
+from django.contrib.auth import get_user_model
+import graphene
+from graphene_django import DjangoObjectType
+
+class UserType(DjangoObjectType):
+    class Meta:
+        model = get_user_model()
+        # only_fields = ('id','email','password','username')
+
+class Query(graphene.ObjectType):
+    user = graphene.Field(UserType,id=graphene.Int(required=True))
+    me = graphene.Field(UserType)
+
+    def resolve_user(self,info,id):
+        return get_user_model().objects.get(id=id)
+
+    def resolve_me(self,info):
+        user = info.context.user 
+        if user.is_anonymous:
+            raise Exception('Not loggged in!')
+        return user
+        
+class CreateUser(graphene.Mutation):
+    user = graphene.Field(UserType)
+
+    class Arguments:
+        username = graphene.String(required=True)
+        password = graphene.String(required=True)
+        email = graphene.String(required=True)
+
+    def mutate(self,info,username,password,email):
+        user = get_user_model()(
+            username=username,
+            email=email
+        )
+        user.set_password(password)
+        user.save()
+        return CreateUser(user=user)
+
+class Mutation(graphene.ObjectType):
+    create_user = CreateUser.Field()
+    
+    
+````
+
+```
+
+cd app/schema.py
+
+import graphene 
+import cassandra.schema
+import users.schema
+class Query(users.schema.Query,cassandra.schema.Query,graphene.ObjectType):
+  pass
+
+class Mutation(users.schema.Mutation,cassandra.schema.Mutation,graphene.ObjectType):
+  pass
+
+schema = graphene.Schema(query=Query ,mutation=Mutation)
+
+```
 
 
 
