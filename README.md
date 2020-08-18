@@ -15,6 +15,7 @@ python manage.py startapp cassandra
 <h3>Go to settings.py and add this</h3>
 
 ```
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -25,10 +26,12 @@ INSTALLED_APPS = [
     'graphene_django',
     'cassandra'
 ]
+
 ```
 <h3>Go to models.py and add this</h3>
 
 ```
+
 from django.db import models
 
 # Create your models here.
@@ -39,11 +42,15 @@ class Cassandra(models.Model):
     Description = models.TextField(blank=True)
     url = models.URLField()
     createdAt = models.DateTimeField(auto_now_add=True)
+    
 ```
+
 ```
+
 cd app/
 python manage.py makemigrations
 python manage.py migrate
+
 ```
 
 
@@ -63,6 +70,7 @@ INSTALLED_APPS = [
 GRAPHENE={
     'SCHEMA':'app.schema.schema'
 }
+
 ```
 
 ```
@@ -96,6 +104,7 @@ class Query(graphene.ObjectType):
 <h1>Schema.py in app folder</h1>
 
 ```
+
 import graphene 
 import cassandra.schema
 
@@ -103,10 +112,12 @@ class Query(cassandra.schema.Query,graphene.ObjectType):
   pass
 
 schema = graphene.Schema(query=Query)
+
 ```
 <h1>urls.py in app folder</h1>
 
 ```
+
 from django.contrib import admin
 from django.urls import path
 from graphene_django.views import GraphQLView
