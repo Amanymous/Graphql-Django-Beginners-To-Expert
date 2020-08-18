@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'graphene_django',
     'cassandra'
 ]
-GRAPHENE={
+GRAPHENE = {
     'SCHEMA':'app.schema.schema'
 }
 MIDDLEWARE = [
