@@ -28,6 +28,7 @@ INSTALLED_APPS = [
 ]
 
 ```
+
 <h3>Go to models.py and add this</h3>
 
 ```
@@ -55,6 +56,7 @@ python manage.py migrate
 
 
 <h1>Creating Schema with Graphene-Django</h1>
+
 ```
 
 INSTALLED_APPS = [
@@ -114,6 +116,7 @@ class Query(cassandra.schema.Query,graphene.ObjectType):
 schema = graphene.Schema(query=Query)
 
 ```
+
 <h1>urls.py in app folder</h1>
 
 ```
