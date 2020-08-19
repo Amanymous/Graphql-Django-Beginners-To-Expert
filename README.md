@@ -13,7 +13,7 @@ django-admin startproject app
 cd app
 python manage.py migrate
 python manage.py runserver
-python manage.py startapp cassandra
+python manage.py startapp tracks
 
 ```
 <h3>Go to settings.py and add this</h3>
@@ -21,6 +21,7 @@ python manage.py startapp cassandra
 ```
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -28,7 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'graphene_django',
-    'cassandra'
+    'tracks'
 ]
 
 ```
@@ -40,13 +41,21 @@ INSTALLED_APPS = [
 from django.db import models
 
 # Create your models here.
-class Cassandra(models.Model):
-    FirstName = models.CharField(max_length=50)
-    LastName = models.CharField(max_length=50)
-    Age = models.PositiveIntegerField(null=True, blank=True)    
-    Description = models.TextField(blank=True)
+from django.db import models
+
+from django.contrib.auth import get_user_model
+# Create your models here.
+
+
+class Track(models.Model):
+    # id will be created automatically
+    title = models.CharField(max_length=50)
+    # we make it optional by using blank=True
+    description = models.TextField(blank=True)
     url = models.URLField()
-    createdAt = models.DateTimeField(auto_now_add=True)
+    # It is automatically populated
+    created_at = models.DateTimeField(auto_now_add=True)
+   
     
 ```
 
@@ -71,7 +80,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'graphene_django',
-    'cassandra'
+    'tracks'
 ]
 GRAPHENE={
     'SCHEMA':'app.schema.schema'
@@ -88,22 +97,22 @@ Cassandra.objects.create(FirstName="Aman",LastName="Mirza",Age=21,Description="c
 
 ```
 
-<h1>Schema.py in cassandra folder</h1>
+<h1>Schema.py in tracks folder</h1>
 
 ```
 import graphene
-from .models import Cassandra
+from .models import Track
 from graphene_django import DjangoObjectType
 
-class CassandraType(DjangoObjectType):
+class TrackType(DjangoObjectType):
     class Meta:
-        model = Cassandra
+        model = Track
 
 class Query(graphene.ObjectType):
-    cassandras = graphene.List(CassandraType)
+    tracks = graphene.List(CassandraType)
 
-    def resolve_cassandras(self,info):
-      return Cassandra.object.all()
+    def resolve_tracks(self,info):
+      return Track.object.all()
 
 ```
 
@@ -112,9 +121,9 @@ class Query(graphene.ObjectType):
 ```
 
 import graphene 
-import cassandra.schema
+import tracks.schema
 
-class Query(cassandra.schema.Query,graphene.ObjectType):
+class Query(tracks.schema.Query,graphene.ObjectType):
   pass
 
 schema = graphene.Schema(query=Query)
@@ -132,53 +141,51 @@ from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('graphql/',csrf_exempt(GraphQLView.as_view(graphiql=True)))
+    path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True))),
 ]
 
 ```
 
 
-<h1>Adding Mutations In schema.py in app folder and in cassanda folder</h1>
+<h1>Adding Mutations In schema.py in app folder and in tracks folder</h1>
 
 ```
 
-cd cassandra/
+cd tracks/
 
 import graphene
-from .models import Cassandra
+from .models import Track
 from graphene_django import DjangoObjectType
 
 class CassandraType(DjangoObjectType):
     class Meta:
-        model = Cassandra
+        model = Track
 
 class Query(graphene.ObjectType):
-    cassandras = graphene.List(CassandraType)
+    tracks = graphene.List(TrackType)
 
-    def resolve_cassandras(self,info):
-      return Cassandra.object.all()
+    def resolve_tracks(self,info):
+      return Track.object.all()
 
 # adding mutation
-class CreateCassandra(graphene.Mutation):
-    cassandra = graphene.String()
-    
+cd tracks/schema.py
+
+class CreateTrack(graphene.Mutation):
+    track = graphene.Field(TrackType)
 
     class Arguments:
-        FirstName = graphene.String()
-        LastName = graphene.String()
-        Age = graphene.Int()
-        Description = graphene.String()
+        title = graphene.String()
+        description = graphene.String()
         url = graphene.String()
 
-    def mutate(self,info,FirstName,LastName,Age,Description,url):
-        cassandra = Cassandra(FirstName=FirstName,LastName=LastName,
-        Age=Age,Description=Description,url=url)
-        cassandra.save()
-        return CreateCassandra(cassandra=cassandra)
-
+    def mutate(self, info, title, description, url):
+        track = Track(title=title, description=description,
+                      url=url)
+         track.save()
+         return CreateTrack(track=track)
 
 class Mutation(graphene.ObjectType):
-    create_cassandra = CreateCassandra.Field()
+    create_track = CreateTrack.Field()
     
     
 ```
@@ -186,13 +193,13 @@ class Mutation(graphene.ObjectType):
 ```
 
 cd app/
-import graphene 
-import cassandra.schema
+import graphene
+import tracks.schema
 
-class Query(cassandra.schema.Query,graphene.ObjectType):
+class Query(tracks.schema.Query,graphene.ObjectType):
   pass
 
-class Mutation(cassandra.schema.Mutation,graphene.ObjectType):
+class Mutation(tracks.schema.Mutation,graphene.ObjectType):
   pass
 
 schema = graphene.Schema(query=Query ,mutation=Mutation)
@@ -240,14 +247,14 @@ class Mutation(graphene.ObjectType):
 ```
 
 cd app/schema.py
-
-import graphene 
-import cassandra.schema
+import graphene
+import tracks.schema
 import users.schema
-class Query(cassandra.schema.Query,graphene.ObjectType):
+
+class Query(tracks.schema.Query,graphene.ObjectType):
   pass
 
-class Mutation(users.schema.Mutation,cassandra.schema.Mutation,graphene.ObjectType):
+class Mutation(users.schema.Mutation,tracks.schema.Mutation,graphene.ObjectType):
   pass
 
 schema = graphene.Schema(query=Query ,mutation=Mutation)
@@ -260,28 +267,34 @@ schema = graphene.Schema(query=Query ,mutation=Mutation)
 
 cd users/schema.py
 
-from django.contrib.auth import get_user_model
 import graphene
+from django.contrib.auth import get_user_model
 from graphene_django import DjangoObjectType
+from graphql import GraphQLError
+
 
 class UserType(DjangoObjectType):
     class Meta:
         model = get_user_model()
-        # only_fields = ('id','email','password','username')
+        # to return only the fields included
+        # only_fields = ('id', 'email', 'password', 'username')
+
 
 class Query(graphene.ObjectType):
-    user = graphene.Field(UserType,id=graphene.Int(required=True))
+    user = graphene.Field(UserType, id=graphene.Int(required=True))
     me = graphene.Field(UserType)
 
-    def resolve_user(self,info,id):
+    def resolve_user(self, info, id):
         return get_user_model().objects.get(id=id)
 
-    def resolve_me(self,info):
-        user = info.context.user 
+    def resolve_me(self, info):
+        user = info.context.user
         if user.is_anonymous:
-            raise Exception('Not loggged in!')
+            raise GraphQLError('Not logged in!')
+
         return user
-        
+
+
 class CreateUser(graphene.Mutation):
     user = graphene.Field(UserType)
 
@@ -290,7 +303,7 @@ class CreateUser(graphene.Mutation):
         password = graphene.String(required=True)
         email = graphene.String(required=True)
 
-    def mutate(self,info,username,password,email):
+    def mutate(self, info, username, password, email):
         user = get_user_model()(
             username=username,
             email=email
@@ -298,6 +311,7 @@ class CreateUser(graphene.Mutation):
         user.set_password(password)
         user.save()
         return CreateUser(user=user)
+
 
 class Mutation(graphene.ObjectType):
     create_user = CreateUser.Field()
@@ -309,13 +323,17 @@ class Mutation(graphene.ObjectType):
 
 cd app/schema.py
 
-import graphene 
-import cassandra.schema
+import graphene
+import tracks.schema
 import users.schema
-class Query(users.schema.Query,cassandra.schema.Query,graphene.ObjectType):
-  pass
 
-class Mutation(users.schema.Mutation,cassandra.schema.Mutation,graphene.ObjectType):
+
+
+class Query(users.schema.Query, tracks.schema.Query, graphene.ObjectType):
+    pass
+
+
+class Mutation(users.schema.Mutation, tracks.schema.Mutation, graphene.ObjectType):
   pass
 
 schema = graphene.Schema(query=Query ,mutation=Mutation)
@@ -326,6 +344,8 @@ schema = graphene.Schema(query=Query ,mutation=Mutation)
 
 ```
 cd app/settings.py
+
+"""
 
 """
 Django settings for app project.
@@ -349,7 +369,7 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'cge*=d(da8^5#bax0(tt=2wsrpsc$isaz)pjq^8m!mqjf6z+!@'
+SECRET_KEY = 's+rl)1ly1xw$i3*mlbq)r9tr10-!aowyokaoehis8j-@a58#4e'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -360,6 +380,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -367,15 +388,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'graphene_django',
-    'cassandra'
+    'tracks'
 ]
+
+
 GRAPHENE = {
-    'SCHEMA':'app.schema.schema',
+    'SCHEMA': 'app.schema.schema',
     'MIDDLEWARE': [
         'graphql_jwt.middleware.JSONWebTokenMiddleware',
-    ]
+    ],
 }
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',    
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -384,8 +410,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-
-   
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -466,6 +490,7 @@ STATIC_URL = '/static/'
 ```
 
 ```
+
 cd users/schema.py
 
 def resolve_me(self,info):
@@ -474,27 +499,30 @@ def resolve_me(self,info):
             raise Exception('Not loggged in!')
         return user
         
+        
 ````
 
 ```
 
 cd app/schema.py
 
-import graphene 
-import cassandra.schema
+import graphene
+import tracks.schema
 import users.schema
 import graphql_jwt
 
-class Query(users.schema.Query,cassandra.schema.Query,graphene.ObjectType):
-  pass
 
-class Mutation(users.schema.Mutation,cassandra.schema.Mutation,graphene.ObjectType):
+class Query(users.schema.Query, tracks.schema.Query, graphene.ObjectType):
+    pass
+
+
+class Mutation(users.schema.Mutation, tracks.schema.Mutation, graphene.ObjectType):
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
 
-schema = graphene.Schema(query=Query ,mutation=Mutation)
 
+schema = graphene.Schema(query=Query, mutation=Mutation)
 
 ```
 
