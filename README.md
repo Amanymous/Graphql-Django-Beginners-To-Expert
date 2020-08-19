@@ -1,4 +1,8 @@
 # Graphql-Django-Beginners-To-Expert
+https://dev.to/pydorax/an-intro-to-graphql-with-django-16e1
+https://dev.to/pydorax
+follow these links also for more information
+
 <h1>GraphQl Beginners To Advanced In Python</h1>
 
 ```
