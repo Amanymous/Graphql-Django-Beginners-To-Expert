@@ -474,6 +474,8 @@ def resolve_me(self,info):
 
 ```
 
+cd app/schema.py
+
 import graphene 
 import cassandra.schema
 import users.schema
